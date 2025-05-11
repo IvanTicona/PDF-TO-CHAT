@@ -1,0 +1,84 @@
+service: dorian-pdf-to-chat
+
+frameworkVersion: '>=4.0.0'
+useDotenv: true
+
+provider:
+  name: aws
+  region: us-east-1
+  runtime: nodejs20.x
+
+  # HTTP API v2 con CORS global
+  httpApi:
+    payload: '2.0'
+    cors:
+      allowedOrigins:
+        - '*'             # o tu dominio específico
+      allowedMethods:
+        - OPTIONS
+        - POST
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+        - X-Api-Key
+        - X-Amz-Security-Token
+
+  environment:
+    BUCKET_NAME: ${env:BUCKET_NAME}
+    DDB_TABLE:    ${env:DDB_TABLE}
+    BEDROCK_MODEL_ID: ${env:BEDROCK_MODEL_ID}
+
+  iam:
+    role:
+      managedPolicies:
+        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+          Resource:
+            - arn:aws:s3:::${env:BUCKET_NAME}/*
+
+        - Effect: Allow
+          Action:
+            - textract:StartDocumentAnalysis
+            - textract:GetDocumentAnalysis
+          Resource: "*"
+
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+          Resource:
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${env:DDB_TABLE}
+
+        - Effect: Allow
+          Action:
+            - bedrock:InvokeModel
+          Resource:
+            - arn:aws:bedrock:${self:provider.region}::foundation-model/${env:BEDROCK_MODEL_ID}
+
+functions:
+  presign:
+    handler: src/handlers/presign.handler
+    events:
+      - httpApi:
+          path: /presign
+          method: post
+
+  textract:
+    handler: src/handlers/textract.handler
+    timeout: 300
+    events:
+      - s3:
+          bucket: ${env:BUCKET_NAME}
+          event: s3:ObjectCreated:*
+          existing: true
+
+  qa:
+    handler: src/handlers/qa.handler
+    events:
+      - httpApi:
+          path: /qa
+          method: post
