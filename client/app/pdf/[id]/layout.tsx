@@ -7,7 +7,8 @@ export default async function PdfLayout({
   children: React.ReactNode
   params: Promise<{ id: string }>
 }) {
-  const { id } = await params
+  const { id: rawId } = await params
+  const id = decodeURIComponent(rawId)
   return (
     <div className="flex h-screen">
       <Sidebar selectedId={id} />

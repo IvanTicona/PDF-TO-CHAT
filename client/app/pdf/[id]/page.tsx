@@ -6,7 +6,8 @@ export default async function PdfChatPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const { id } = await params
+  const { id: rawId } = await params
+  const id = decodeURIComponent(rawId)
   return (
     <main className="flex-1 p-4">
       <ChatWindow documentId={id} />
