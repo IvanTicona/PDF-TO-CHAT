@@ -1,11 +1,9 @@
-// src/handlers/listPdfs.js
 'use strict';
 
 const { S3Client, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 
 module.exports.handler = async () => {
   const s3 = new S3Client({ region: process.env.AWS_REGION });
-  // Lista todos los objetos (ojo al número si tienes muchos)
   const res = await s3.send(new ListObjectsV2Command({
     Bucket: process.env.BUCKET_NAME,
   }));

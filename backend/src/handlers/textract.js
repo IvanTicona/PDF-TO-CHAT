@@ -13,7 +13,6 @@ const {
 module.exports.handler = async (event) => {
   console.log('S3 Event:', JSON.stringify(event));
 
-  // 1) Extrae bucket y key del evento S3
   const record = event.Records && event.Records[0];
   if (!record) {
     console.error('No S3 record found');
@@ -22,12 +21,10 @@ module.exports.handler = async (event) => {
   const bucket = record.s3.bucket.name;
   const key = decodeURIComponent(record.s3.object.key.replace(/\+/g, ' '));
 
-  // Inicializa clientes AWS
   const textract = new TextractClient({ region: process.env.AWS_REGION });
   const ddb = new DynamoDBClient({ region: process.env.AWS_REGION });
 
   try {
-    // 2) Inicia el trabajo de análisis asíncrono
     const startCmd = new StartDocumentAnalysisCommand({
       DocumentLocation: { S3Object: { Bucket: bucket, Name: key } },
       FeatureTypes: ['TABLES', 'FORMS'],
@@ -35,11 +32,10 @@ module.exports.handler = async (event) => {
     const { JobId } = await textract.send(startCmd);
     console.log(`Started Textract job ${JobId} for ${key}`);
 
-    // 3) Polling hasta que Textract termine
     let jobStatus = 'IN_PROGRESS';
     let analysisResult = null;
     while (jobStatus === 'IN_PROGRESS') {
-      await new Promise((r) => setTimeout(r, 5000)); // espera 5s
+      await new Promise((r) => setTimeout(r, 5000));
 
       const getCmd = new GetDocumentAnalysisCommand({ JobId });
       const res = await textract.send(getCmd);
@@ -52,14 +48,12 @@ module.exports.handler = async (event) => {
       throw new Error(`Textract job ${JobId} failed with status ${jobStatus}`);
     }
 
-    // 4) Extrae todas las líneas de texto
     const blocks = analysisResult.Blocks || [];
     const text = blocks
       .filter((b) => b.BlockType === 'LINE' && b.Text)
       .map((b) => b.Text)
       .join('\n');
 
-    // 5) Guarda el resultado en DynamoDB
     const putParams = {
       TableName: process.env.DDB_TABLE,
       Item: {
@@ -75,7 +69,6 @@ module.exports.handler = async (event) => {
     return;
   } catch (err) {
     console.error('ERROR in textract handler:', err);
-    // Re-lanza para que Lambda marque fallo y puedas ver el log
     throw err;
   }
 };

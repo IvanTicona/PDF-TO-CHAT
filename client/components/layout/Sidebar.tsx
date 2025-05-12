@@ -2,13 +2,14 @@
 import Link from 'next/link'
 import { usePdfs } from '@/hooks/usePdfs'
 import { Spinner } from '@/components/common/spinner'
+import { FileText } from 'lucide-react'
 
 export function Sidebar({ selectedId }: { selectedId?: string }) {
   const { data: pdfs = [], isLoading } = usePdfs()
 
   return (
     <aside className="w-64 bg-gray-50 border-r p-4 flex flex-col">
-      <h2 className="text-lg font-semibold mb-4">Tus PDFs</h2>
+      <h2 className="text-xl font-bold mb-4">Tus PDFs</h2>
 
       {isLoading ? (
         <Spinner className="mx-auto" />
@@ -19,12 +20,13 @@ export function Sidebar({ selectedId }: { selectedId?: string }) {
               <Link
                 href={`/pdf/${encodeURIComponent(pdf.id)}`}
                 className={
-                  `block px-2 py-1 rounded ${
-                    pdf.id === selectedId ? 'bg-blue-100 font-medium' : 'hover:bg-gray-100'
+                  `flex items-center px-3 py-2 rounded ${
+                    encodeURIComponent(pdf.id) === selectedId ? 'bg-blue-600 font-medium text-amber-50' : 'hover:bg-gray-100'
                   }`
                 }
               >
-                {pdf.name}
+              <FileText className={`mr-2 h-4 w-4 ${encodeURIComponent(pdf.id) === selectedId? 'text-white': 'text-gray-600'}`} />
+              <span className="truncate">{pdf.name}</span>
               </Link>
             </li>
           ))}

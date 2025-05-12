@@ -8,7 +8,6 @@ module.exports.handler = async (event) => {
   console.log('EVENT BODY:', event.body);
 
   try {
-    // 1) Parsear petición
     const { documentId, question } = JSON.parse(event.body);
     if (!documentId || !question) {
       return {
@@ -17,7 +16,6 @@ module.exports.handler = async (event) => {
       };
     }
 
-    // 2) Leer contenido extraído de DynamoDB
     const ddb = new DynamoDBClient({ region: process.env.AWS_REGION });
     const getParams = {
       TableName: process.env.DDB_TABLE,
@@ -33,10 +31,8 @@ module.exports.handler = async (event) => {
       };
     }
 
-    // 3) Construir prompt
     const prompt = `Context:\n${content}\n\nQuestion: ${question}`;
 
-    // 4) Preparar payload para Titan Text Premier
     const payload = {
       inputText: prompt,
       textGenerationConfig: {
@@ -46,7 +42,6 @@ module.exports.handler = async (event) => {
       },
     };
 
-    // 5) Invocar Bedrock InvokeModel
     const client = new BedrockRuntimeClient({ region: process.env.AWS_REGION });
     const cmd = new InvokeModelCommand({
       modelId: process.env.BEDROCK_MODEL_ID,
@@ -56,13 +51,11 @@ module.exports.handler = async (event) => {
     });
     const response = await client.send(cmd);
 
-    // 6) Decodificar la respuesta
     let bodyString;
     const raw = response.body;
     if (raw instanceof Uint8Array || Buffer.isBuffer(raw)) {
       bodyString = new TextDecoder().decode(raw);
     } else {
-      // iterable stream
       const chunks = [];
       for await (const chunk of raw) {
         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
@@ -70,11 +63,9 @@ module.exports.handler = async (event) => {
       bodyString = Buffer.concat(chunks).toString('utf-8');
     }
 
-    // 7) Extraer texto generado
     const result = JSON.parse(bodyString);
     const answer = result.results?.[0]?.outputText || bodyString;
 
-    // 8) Devolver respuesta
     return {
       statusCode: 200,
       body: JSON.stringify({ answer }),

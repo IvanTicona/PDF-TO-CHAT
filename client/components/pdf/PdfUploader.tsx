@@ -1,4 +1,5 @@
 'use client'
+
 import { useState, ChangeEvent } from 'react'
 import { useRouter }              from 'next/navigation'
 import { useUploadPdf }           from '@/hooks/useUploadPdf'
@@ -15,19 +16,42 @@ export function PdfUploader() {
     },
   })
 
+  function onFileChange(e: ChangeEvent<HTMLInputElement>) {
+    setFile(e.target.files?.[0] ?? null)
+  }
+
   return (
-    <div className="max-w-md mx-auto p-6">
-      <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+    <div className="flex flex-col items-center justify-center space-y-4">
+      <input
+        id="file-upload"
+        type="file"
+        accept="application/pdf"
+        className="sr-only"
+        onChange={onFileChange}
+      />
+
+      <label
+        htmlFor="file-upload"
+        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md bg-gray-100 hover:bg-gray-200 cursor-pointer"
+      >
+        {file ? (
+          <span className="truncate max-w-xs text-gray-800">{file.name}</span>
+        ) : (
+          <span className="text-gray-600">Seleccionar PDF</span>
+        )}
+      </label>
 
       <Button
         disabled={!file || isPending}
         onClick={() => file && mutate(file)}
-        className="mt-4 flex items-center justify-center"
+        className="inline-flex items-center space-x-2"
       >
-        {isPending ? <Spinner className="w-4 h-4" /> : 'Subir PDF'}
+        {isPending ? <Spinner className="w-4 h-4" /> : <span>Subir PDF</span>}
       </Button>
 
-      {isError && <p className="text-red-600 mt-2">Error al subir. Intenta de nuevo.</p>}
+      {isError && (
+        <p className="text-red-600 mt-2">Error al subir. Intenta de nuevo.</p>
+      )}
     </div>
   )
 }
