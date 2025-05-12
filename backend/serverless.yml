@@ -8,12 +8,11 @@ provider:
   region: us-east-1
   runtime: nodejs20.x
 
-  # HTTP API v2 con CORS global
   httpApi:
     payload: '2.0'
     cors:
       allowedOrigins:
-        - '*'             # o tu dominio específico
+        - '*'
       allowedMethods:
         - OPTIONS
         - POST
@@ -58,6 +57,12 @@ provider:
             - bedrock:InvokeModel
           Resource:
             - arn:aws:bedrock:${self:provider.region}::foundation-model/${env:BEDROCK_MODEL_ID}
+        
+        - Effect: Allow
+          Action:
+            - s3:ListBucket
+          Resource:
+            - arn:aws:s3:::${env:BUCKET_NAME}
 
 functions:
   presign:
@@ -82,3 +87,10 @@ functions:
       - httpApi:
           path: /qa
           method: post
+  
+  listPdfs:
+    handler: src/handlers/listPdfs.handler
+    events:
+      - httpApi:
+          path: /pdf-list
+          method: get
